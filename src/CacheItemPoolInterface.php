@@ -1,7 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Psr\Cache;
 
 /**
@@ -13,7 +12,7 @@ namespace Psr\Cache;
  * All configuration and initialization of the Pool is left up to an
  * Implementing Library.
  */
-interface CacheItemPoolInterface
+interface Cache_Item_Pool_Interface
 {
     /**
      * Returns a Cache Item representing the specified key.
@@ -31,8 +30,7 @@ interface CacheItemPoolInterface
      * @return CacheItemInterface
      *   The corresponding Cache Item.
      */
-    public function getItem(string $key): CacheItemInterface;
-
+    public function get_item(string $key): Cache_Item_Interface;
     /**
      * Returns a traversable set of cache items.
      *
@@ -49,8 +47,7 @@ interface CacheItemPoolInterface
      *   key is not found. However, if no keys are specified then an empty
      *   traversable MUST be returned instead.
      */
-    public function getItems(array $keys = []): iterable;
-
+    public function get_items(array $keys = []): iterable;
     /**
      * Confirms if the cache contains specified cache item.
      *
@@ -68,8 +65,7 @@ interface CacheItemPoolInterface
      * @return bool
      *   True if item exists in the cache, false otherwise.
      */
-    public function hasItem(string $key): bool;
-
+    public function has_item(string $key): bool;
     /**
      * Deletes all items in the pool.
      *
@@ -77,7 +73,6 @@ interface CacheItemPoolInterface
      *   True if the pool was successfully cleared. False if there was an error.
      */
     public function clear(): bool;
-
     /**
      * Removes the item from the pool.
      *
@@ -91,8 +86,7 @@ interface CacheItemPoolInterface
      * @return bool
      *   True if the item was successfully removed. False if there was an error.
      */
-    public function deleteItem(string $key): bool;
-
+    public function delete_item(string $key): bool;
     /**
      * Removes multiple items from the pool.
      *
@@ -106,8 +100,7 @@ interface CacheItemPoolInterface
      * @return bool
      *   True if the items were successfully removed. False if there was an error.
      */
-    public function deleteItems(array $keys): bool;
-
+    public function delete_items(array $keys): bool;
     /**
      * Persists a cache item immediately.
      *
@@ -117,8 +110,7 @@ interface CacheItemPoolInterface
      * @return bool
      *   True if the item was successfully persisted. False if there was an error.
      */
-    public function save(CacheItemInterface $item): bool;
-
+    public function save(Cache_Item_Interface $item): bool;
     /**
      * Sets a cache item to be persisted later.
      *
@@ -128,8 +120,7 @@ interface CacheItemPoolInterface
      * @return bool
      *   False if the item could not be queued or if a commit was attempted and failed. True otherwise.
      */
-    public function saveDeferred(CacheItemInterface $item): bool;
-
+    public function save_deferred(Cache_Item_Interface $item): bool;
     /**
      * Persists any deferred cache items.
      *

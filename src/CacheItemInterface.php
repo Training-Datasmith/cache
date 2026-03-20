@@ -1,7 +1,6 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Psr\Cache;
 
 /**
@@ -23,7 +22,7 @@ namespace Psr\Cache;
  * SHOULD NOT assume that an Item created by one Implementing Library is
  * compatible with a Pool from another Implementing Library.
  */
-interface CacheItemInterface
+interface Cache_Item_Interface
 {
     /**
      * Returns the key for the current cache item.
@@ -34,8 +33,7 @@ interface CacheItemInterface
      * @return string
      *   The key string for this cache item.
      */
-    public function getKey(): string;
-
+    public function get_key(): string;
     /**
      * Retrieves the value of the item from the cache associated with this object's key.
      *
@@ -49,7 +47,6 @@ interface CacheItemInterface
      *   The value corresponding to this cache item's key, or null if not found.
      */
     public function get(): mixed;
-
     /**
      * Confirms if the cache item lookup resulted in a cache hit.
      *
@@ -59,8 +56,7 @@ interface CacheItemInterface
      * @return bool
      *   True if the request resulted in a cache hit. False otherwise.
      */
-    public function isHit(): bool;
-
+    public function is_hit(): bool;
     /**
      * Sets the value represented by this cache item.
      *
@@ -75,7 +71,6 @@ interface CacheItemInterface
      *   The invoked object.
      */
     public function set(mixed $value): static;
-
     /**
      * Sets the absolute expiration time for this cache item.
      *
@@ -88,8 +83,7 @@ interface CacheItemInterface
      * @return static
      *   The called object.
      */
-    public function expiresAt(?\DateTimeInterface $expiration): static;
-
+    public function expires_at(?\DateTimeInterface $expiration): static;
     /**
      * Sets the relative expiration time for this cache item.
      *
@@ -103,5 +97,5 @@ interface CacheItemInterface
      * @return static
      *   The called object.
      */
-    public function expiresAfter(int|\DateInterval|null $time): static;
+    public function expires_after(int|\DateInterval|null $time): static;
 }

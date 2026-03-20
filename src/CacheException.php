@@ -1,12 +1,11 @@
 <?php
 
-declare(strict_types=1);
-
+declare (strict_types=1);
 namespace Psr\Cache;
 
 /**
  * Exception interface for all exceptions thrown by an Implementing Library.
  */
-interface CacheException extends \Throwable
+interface Cache_Exception extends \Throwable
 {
 }
