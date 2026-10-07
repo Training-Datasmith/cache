@@ -8,13 +8,16 @@ use Psr\Cache\CacheItemInterface;
 use Psr\Cache\CacheItemPoolInterface;
 
 /**
- * Reference PSR-6 pool used to exercise the cache interfaces.
+ * In-memory PSR-6 pool used only by tests/Integration.
+ *
+ * This is a reference implementation, not part of the package under test.
+ * Coverage of src/ lives in tests/Contract.
  *
  * Keys must be non-empty and must not contain the reserved characters {}()/\@:.
- * Any other character, including keys longer than 64 bytes, is accepted.
- * A null TTL uses $defaultTtl when one is configured, otherwise the item does not expire.
- * Deferred saves are snapshotted and are visible on this pool before commit().
- * commit() runs from __destruct() so uncommitted items are not dropped.
+ * A null expiration does not expire. Deferred saves are copied and stay visible
+ * on this pool before commit(). commit() also runs from __destruct().
+ * Stored values are serialized so later changes to the caller's variables do
+ * not change the cached value.
  */
 final class MemoryCachePool implements CacheItemPoolInterface
 {
@@ -29,9 +32,6 @@ final class MemoryCachePool implements CacheItemPoolInterface
     /** @var MutableClock */
     private $clock;
 
-    /** @var int|null */
-    private $defaultTtl;
-
     /**
      * Snapshots taken by saveDeferred(), keyed by cache key.
      *
@@ -39,16 +39,11 @@ final class MemoryCachePool implements CacheItemPoolInterface
      */
     private $deferred = [];
 
-    public function __construct(?MemoryBackend $backend = null, ?MutableClock $clock = null, ?int $defaultTtl = null)
+    public function __construct(?MemoryBackend $backend = null, ?MutableClock $clock = null)
     {
-        if ($defaultTtl !== null && $defaultTtl < 0) {
-            throw new SimpleInvalidArgumentException('Default TTL must be null or a non-negative integer.');
-        }
-
         $this->id = bin2hex(random_bytes(16));
         $this->backend = $backend ?? new MemoryBackend();
         $this->clock = $clock ?? new MutableClock();
-        $this->defaultTtl = $defaultTtl;
     }
 
     public function getItem(string $key): CacheItemInterface
@@ -98,10 +93,6 @@ final class MemoryCachePool implements CacheItemPoolInterface
 
     public function clear(): bool
     {
-        if ($this->backend->failClear) {
-            return false;
-        }
-
         $this->deferred = [];
         $this->backend->clear();
 
@@ -111,10 +102,6 @@ final class MemoryCachePool implements CacheItemPoolInterface
     public function deleteItem(string $key): bool
     {
         $this->assertLegalKey($key);
-
-        if ($this->backend->failDeletes) {
-            return false;
-        }
 
         unset($this->deferred[$key]);
         $this->backend->remove($key);
@@ -129,9 +116,7 @@ final class MemoryCachePool implements CacheItemPoolInterface
         }
 
         foreach ($keys as $key) {
-            if (!$this->deleteItem($key)) {
-                return false;
-            }
+            $this->deleteItem($key);
         }
 
         return true;
@@ -143,21 +128,17 @@ final class MemoryCachePool implements CacheItemPoolInterface
             return false;
         }
 
-        if ($this->backend->failWrites) {
-            return false;
-        }
-
         $key = $item->getKey();
         unset($this->deferred[$key]);
 
-        $expiration = $this->resolveExpiration($item);
+        $expiration = $item->expiration();
         if ($this->isExpired($expiration)) {
             $this->backend->remove($key);
 
             return true;
         }
 
-        $this->backend->put($key, $item->currentValue(), $expiration);
+        $this->backend->put($key, $this->isolateValue($item->currentValue()), $expiration);
 
         return true;
     }
@@ -169,8 +150,8 @@ final class MemoryCachePool implements CacheItemPoolInterface
         }
 
         $this->deferred[$item->getKey()] = [
-            'value' => $item->currentValue(),
-            'expiration' => $this->resolveExpiration($item),
+            'value' => $this->isolateValue($item->currentValue()),
+            'expiration' => $item->expiration(),
         ];
 
         return true;
@@ -178,10 +159,6 @@ final class MemoryCachePool implements CacheItemPoolInterface
 
     public function commit(): bool
     {
-        if ($this->deferred !== [] && $this->backend->failWrites) {
-            return false;
-        }
-
         foreach ($this->deferred as $key => $record) {
             if ($this->isExpired($record['expiration'])) {
                 $this->backend->remove($key);
@@ -235,18 +212,13 @@ final class MemoryCachePool implements CacheItemPoolInterface
         return $item instanceof MemoryCacheItem && $item->belongsTo($this->id);
     }
 
-    private function resolveExpiration(MemoryCacheItem $item): ?\DateTimeImmutable
+    /**
+     * @param mixed $value
+     * @return mixed
+     */
+    private function isolateValue($value)
     {
-        $expiration = $item->expiration();
-        if ($expiration !== null || $this->defaultTtl === null) {
-            return $expiration;
-        }
-
-        if ($this->defaultTtl === 0) {
-            return $this->clock->now();
-        }
-
-        return $this->clock->now()->modify(sprintf('+%d seconds', $this->defaultTtl));
+        return unserialize(serialize($value));
     }
 
     private function isExpired(?\DateTimeImmutable $expiration): bool

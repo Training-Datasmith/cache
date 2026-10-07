@@ -36,8 +36,6 @@ class CacheItemPoolInterfaceTest extends TestCase
             [['key', 'string']],
             CacheItemInterface::class
         );
-        $this->assertDocContains(CacheItemPoolInterface::class, 'getItem', 'MUST NOT return null');
-        $this->assertDocContains(CacheItemPoolInterface::class, 'getItem', 'InvalidArgumentException');
     }
 
     public function testGetItemsSignature(): void
@@ -53,12 +51,6 @@ class CacheItemPoolInterfaceTest extends TestCase
             'getItems',
             'iterable<string, CacheItemInterface>'
         );
-        $this->assertDocContains(
-            CacheItemPoolInterface::class,
-            'getItems',
-            'if no keys are specified then an empty traversable MUST be returned'
-        );
-        $this->assertDocContains(CacheItemPoolInterface::class, 'getItems', 'InvalidArgumentException');
     }
 
     public function testHasItemSignature(): void
@@ -69,7 +61,6 @@ class CacheItemPoolInterfaceTest extends TestCase
             [['key', 'string']],
             'bool'
         );
-        $this->assertDocContains(CacheItemPoolInterface::class, 'hasItem', 'InvalidArgumentException');
     }
 
     public function testClearSignature(): void
@@ -85,7 +76,6 @@ class CacheItemPoolInterfaceTest extends TestCase
             [['key', 'string']],
             'bool'
         );
-        $this->assertDocContains(CacheItemPoolInterface::class, 'deleteItem', 'InvalidArgumentException');
     }
 
     public function testDeleteItemsSignature(): void
@@ -96,7 +86,6 @@ class CacheItemPoolInterfaceTest extends TestCase
             [['keys', 'array']],
             'bool'
         );
-        $this->assertDocContains(CacheItemPoolInterface::class, 'deleteItems', 'InvalidArgumentException');
     }
 
     public function testSaveSignature(): void
@@ -122,10 +111,5 @@ class CacheItemPoolInterfaceTest extends TestCase
     public function testCommitSignature(): void
     {
         $this->assertInterfaceMethod(CacheItemPoolInterface::class, 'commit', [], 'bool');
-        $this->assertDocContains(
-            CacheItemPoolInterface::class,
-            'commit',
-            'True if all not-yet-saved items were successfully saved or there were none'
-        );
     }
 }

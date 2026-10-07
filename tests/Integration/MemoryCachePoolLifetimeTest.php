@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace Psr\Cache\Tests\Integration;
 
 use PHPUnit\Framework\TestCase;
-use Psr\Cache\InvalidArgumentException;
 
+/**
+ * Expiration rules for the in-memory reference pool in tests/Fixtures.
+ * This is not coverage of src/. See tests/Contract for the package surface.
+ */
 class MemoryCachePoolLifetimeTest extends TestCase
 {
     use CreatesPools;
@@ -182,83 +185,20 @@ class MemoryCachePoolLifetimeTest extends TestCase
         $this->assertFalse($pool->hasItem('dropped'));
     }
 
-    public function testDefaultTtlStartsWhenTheItemIsPersisted(): void
-    {
-        $clock = $this->clock();
-        $pool = $this->pool($clock, null, 10);
-        $item = $pool->getItem('key');
-        $item->set('value');
-        $clock->advance(9);
-        $this->assertTrue($pool->save($item));
-
-        $clock->advance(9);
-        $this->assertTrue($pool->getItem('key')->isHit());
-        $clock->advance(1);
-        $this->assertFalse($pool->hasItem('key'));
-    }
-
-    public function testExplicitLifetimeOverridesTheDefaultTtl(): void
-    {
-        $clock = $this->clock();
-        $pool = $this->pool($clock, null, 10);
-        $item = $pool->getItem('key');
-        $item->set('value')->expiresAfter(30);
-        $this->assertTrue($pool->save($item));
-
-        $clock->advance(10);
-        $this->assertTrue($pool->hasItem('key'));
-        $clock->advance(20);
-        $this->assertFalse($pool->hasItem('key'));
-    }
-
-    public function testNullLifetimeUsesTheConfiguredDefault(): void
-    {
-        $clock = $this->clock();
-        $pool = $this->pool($clock, null, 10);
-        $item = $pool->getItem('key');
-        $item->set('value')->expiresAfter(100)->expiresAt(null);
-        $this->assertTrue($pool->save($item));
-
-        $clock->advance(10);
-        $this->assertFalse($pool->hasItem('key'));
-    }
-
-    public function testZeroDefaultTtlExpiresItemsThatDoNotSetTheirOwnLifetime(): void
-    {
-        $clock = $this->clock();
-        $pool = $this->pool($clock, null, 0);
-
-        $defaulted = $pool->getItem('defaulted');
-        $defaulted->set('gone');
-        $this->assertTrue($pool->save($defaulted));
-        $this->assertFalse($pool->hasItem('defaulted'));
-
-        $explicit = $pool->getItem('explicit');
-        $explicit->set('kept')->expiresAfter(5);
-        $this->assertTrue($pool->save($explicit));
-        $this->assertTrue($pool->hasItem('explicit'));
-        $clock->advance(5);
-        $this->assertFalse($pool->hasItem('explicit'));
-    }
-
-    public function testNegativeDefaultTtlIsRejected(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->pool(null, null, -1);
-    }
-
     public function testResavingKeepsAnExistingExpiration(): void
     {
         $clock = $this->clock();
-        $pool = $this->pool($clock, null, 5);
+        $pool = $this->pool($clock);
         $item = $pool->getItem('key');
-        $item->set('value')->expiresAfter(60);
+        $item->set('value')->expiresAfter(10);
         $this->assertTrue($pool->save($item));
 
         $again = $pool->getItem('key');
         $this->assertTrue($pool->save($again));
-        $clock->advance(10);
+        $clock->advance(9);
         $this->assertTrue($pool->getItem('key')->isHit());
         $this->assertSame('value', $pool->getItem('key')->get());
+        $clock->advance(1);
+        $this->assertFalse($pool->hasItem('key'));
     }
 }

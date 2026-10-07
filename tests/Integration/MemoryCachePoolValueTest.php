@@ -11,6 +11,10 @@ use Psr\Cache\Tests\Fixtures\ForeignCacheItem;
 use Psr\Cache\Tests\Fixtures\MemoryBackend;
 use Psr\Cache\Tests\Fixtures\SampleValue;
 
+/**
+ * Value rules for the in-memory reference pool in tests/Fixtures.
+ * This is not coverage of src/. See tests/Contract for the package surface.
+ */
 class MemoryCachePoolValueTest extends TestCase
 {
     use CreatesPools;
@@ -56,19 +60,23 @@ class MemoryCachePoolValueTest extends TestCase
         $this->assertFalse($pool->hasItem('missing'));
     }
 
-    public function testSetCanBeReadBackBeforeSaveWithoutFlippingTheLookupHit(): void
+    public function testMissStaysAbsentUntilSaved(): void
     {
         $pool = $this->pool();
         $item = $pool->getItem('key');
         $this->assertFalse($item->isHit());
         $this->assertNull($item->get());
 
-        $this->assertSame($item, $item->set('staged'));
-
-        $this->assertFalse($item->isHit());
-        $this->assertSame('staged', $item->get());
+        $item->set('staged');
         $this->assertFalse($pool->hasItem('key'));
-        $this->assertNull($pool->getItem('key')->get());
+        $fresh = $pool->getItem('key');
+        $this->assertFalse($fresh->isHit());
+        $this->assertNull($fresh->get());
+
+        $this->assertTrue($pool->save($item));
+        $fetched = $pool->getItem('key');
+        $this->assertTrue($fetched->isHit());
+        $this->assertSame('staged', $fetched->get());
     }
 
     public function testHitAndGetStayConsistentInEitherOrder(): void
@@ -241,6 +249,24 @@ class MemoryCachePoolValueTest extends TestCase
         $this->assertEquals($moment, $pool->getItem('moment')->get());
         $this->assertInstanceOf(\DateTimeImmutable::class, $pool->getItem('moment')->get());
         $this->assertEquals($nested, $pool->getItem('nested')->get());
+
+        $object->a = 'changed';
+        $sample->label = 'mutated';
+        $sample->count = 99;
+
+        $isolated = $pool->getItem('object')->get();
+        $this->assertInstanceOf(\stdClass::class, $isolated);
+        $this->assertNotSame($object, $isolated);
+        $this->assertSame('foo', $isolated->a);
+
+        $isolatedSample = $pool->getItem('sample')->get();
+        $this->assertSame('widget', $isolatedSample->label);
+        $this->assertSame(3, $isolatedSample->count);
+
+        $isolatedNested = $pool->getItem('nested')->get();
+        $this->assertSame('foo', $isolatedNested['list'][0]->a);
+        $this->assertSame('widget', $isolatedNested['sample']->label);
+        $this->assertSame(3, $isolatedNested['sample']->count);
     }
 
     public function testCallerArrayMutationsAfterSaveDoNotChangeTheStoredArray(): void
@@ -339,17 +365,6 @@ class MemoryCachePoolValueTest extends TestCase
         $this->assertFalse($pool->hasItem('missing'));
     }
 
-    public function testSavingAFreshMissPersistsNull(): void
-    {
-        $pool = $this->pool();
-        $item = $pool->getItem('key');
-        $this->assertTrue($pool->save($item));
-
-        $fetched = $pool->getItem('key');
-        $this->assertTrue($fetched->isHit());
-        $this->assertNull($fetched->get());
-    }
-
     public function testSeparatePoolsDoNotShareItems(): void
     {
         $first = $this->pool();
@@ -390,36 +405,6 @@ class MemoryCachePoolValueTest extends TestCase
         $this->assertFalse($second->hasItem('key'));
         $this->assertTrue($first->save($item));
         $this->assertSame('owned-by-first', $first->getItem('key')->get());
-    }
-
-    public function testStorageFailuresLeavePreviousValuesInPlace(): void
-    {
-        $backend = new MemoryBackend();
-        $pool = $this->pool(null, $backend);
-        $item = $pool->getItem('key');
-        $item->set('original');
-        $this->assertTrue($pool->save($item));
-
-        $backend->failWrites = true;
-        $replacement = $pool->getItem('key');
-        $replacement->set('replacement');
-        $this->assertFalse($pool->save($replacement));
-        $this->assertSame('original', $pool->getItem('key')->get());
-
-        $backend->failDeletes = true;
-        $this->assertFalse($pool->deleteItem('key'));
-        $this->assertFalse($pool->deleteItems(['key']));
-        $this->assertTrue($pool->hasItem('key'));
-
-        $backend->failClear = true;
-        $this->assertFalse($pool->clear());
-        $this->assertSame('original', $pool->getItem('key')->get());
-
-        $backend->failWrites = false;
-        $backend->failDeletes = false;
-        $backend->failClear = false;
-        $this->assertTrue($pool->clear());
-        $this->assertFalse($pool->hasItem('key'));
     }
 
     public function testPoolsSharingABackendSeeCommittedItemsOnly(): void

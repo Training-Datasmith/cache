@@ -10,6 +10,10 @@ use Psr\Cache\Tests\Fixtures\MemoryBackend;
 use Psr\Cache\Tests\Fixtures\MemoryCachePool;
 use Psr\Cache\Tests\Fixtures\MutableClock;
 
+/**
+ * Builds the in-memory reference pool exercised by tests/Integration.
+ * Those tests are not coverage of src/.
+ */
 trait CreatesPools
 {
     protected function clock(?\DateTimeImmutable $now = null): MutableClock
@@ -17,9 +21,9 @@ trait CreatesPools
         return new MutableClock($now);
     }
 
-    protected function pool(?MutableClock $clock = null, ?MemoryBackend $backend = null, ?int $defaultTtl = null): MemoryCachePool
+    protected function pool(?MutableClock $clock = null, ?MemoryBackend $backend = null): MemoryCachePool
     {
-        return new MemoryCachePool($backend ?? new MemoryBackend(), $clock ?? new MutableClock(), $defaultTtl);
+        return new MemoryCachePool($backend ?? new MemoryBackend(), $clock ?? new MutableClock());
     }
 
     /**

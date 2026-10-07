@@ -14,17 +14,6 @@ final class MemoryBackend
      */
     private array $items = [];
 
-    public bool $failWrites = false;
-
-    public bool $failDeletes = false;
-
-    public bool $failClear = false;
-
-    public function has(string $key): bool
-    {
-        return array_key_exists($key, $this->items);
-    }
-
     /**
      * @return array{value: mixed, expiration: \DateTimeImmutable|null}|null
      */

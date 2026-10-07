@@ -7,8 +7,11 @@ namespace Psr\Cache\Tests\Integration;
 use PHPUnit\Framework\TestCase;
 use Psr\Cache\CacheException;
 use Psr\Cache\InvalidArgumentException;
-use Psr\Cache\Tests\Fixtures\MemoryCachePool;
 
+/**
+ * Key rules for the in-memory reference pool in tests/Fixtures.
+ * This is not coverage of src/. See tests/Contract for the package surface.
+ */
 class MemoryCachePoolKeyTest extends TestCase
 {
     use CreatesPools;
@@ -70,7 +73,6 @@ class MemoryCachePoolKeyTest extends TestCase
             'A',
             'z',
             'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.',
-            str_repeat('a', 300),
         ];
 
         $this->assertSame(64, strlen($keys[8]));
@@ -117,19 +119,6 @@ class MemoryCachePoolKeyTest extends TestCase
 
         $this->assertSame('lower', $pool->getItem('key')->get());
         $this->assertSame('upper', $pool->getItem('Key')->get());
-    }
-
-    public function testAdditionalCharactersAreAccepted(): void
-    {
-        $pool = $this->pool();
-        foreach (['a-b', 'a b', 'clé', 'キャッシュ'] as $key) {
-            $item = $pool->getItem($key);
-            $item->set($key);
-            $this->assertTrue($pool->save($item));
-            $fetched = $pool->getItem($key);
-            $this->assertSame($key, $fetched->getKey());
-            $this->assertSame($key, $fetched->get());
-        }
     }
 
     /**

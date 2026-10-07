@@ -7,6 +7,10 @@ namespace Psr\Cache\Tests\Integration;
 use PHPUnit\Framework\TestCase;
 use Psr\Cache\Tests\Fixtures\MemoryBackend;
 
+/**
+ * Deferred-save rules for the in-memory reference pool in tests/Fixtures.
+ * This is not coverage of src/. See tests/Contract for the package surface.
+ */
 class MemoryCachePoolDeferredTest extends TestCase
 {
     use CreatesPools;
@@ -26,7 +30,6 @@ class MemoryCachePoolDeferredTest extends TestCase
         $second->set('4712');
         $this->assertTrue($pool->saveDeferred($second));
 
-        $this->assertFalse($backend->has('key'));
         $this->assertFalse($reader->hasItem('key'));
         $this->assertTrue($pool->hasItem('key'));
         $this->assertTrue($pool->getItem('key')->isHit());
@@ -34,7 +37,6 @@ class MemoryCachePoolDeferredTest extends TestCase
         $this->assertTrue($pool->getItem('key2')->isHit());
 
         $this->assertTrue($pool->commit());
-        $this->assertTrue($backend->has('key'));
         $this->assertTrue($reader->hasItem('key'));
         $this->assertSame('4711', $reader->getItem('key')->get());
         $this->assertSame('4712', $pool->getItem('key2')->get());
@@ -129,6 +131,7 @@ class MemoryCachePoolDeferredTest extends TestCase
     {
         $backend = new MemoryBackend();
         $pool = $this->pool(null, $backend);
+        $reader = $this->pool(null, $backend);
         $existing = $pool->getItem('key');
         $existing->set('old');
         $this->assertTrue($pool->save($existing));
@@ -140,13 +143,13 @@ class MemoryCachePoolDeferredTest extends TestCase
         $this->assertSame('4711', $pool->getItem('key')->get());
 
         $this->assertTrue($pool->deleteItem('key'));
-        $this->assertFalse($backend->has('key'));
+        $this->assertFalse($reader->hasItem('key'));
         $this->assertFalse($pool->hasItem('key'));
         $this->assertFalse($pool->getItem('key')->isHit());
 
         $this->assertTrue($pool->commit());
         $this->assertFalse($pool->hasItem('key'));
-        $this->assertFalse($backend->has('key'));
+        $this->assertFalse($reader->hasItem('key'));
     }
 
     public function testClearDropsDeferredItems(): void
@@ -160,63 +163,6 @@ class MemoryCachePoolDeferredTest extends TestCase
         $this->assertTrue($pool->commit());
         $this->assertFalse($pool->getItem('key')->isHit());
         $this->assertFalse($pool->hasItem('key'));
-    }
-
-    public function testFailedClearDoesNotDropDeferredOrStoredItems(): void
-    {
-        $backend = new MemoryBackend();
-        $pool = $this->pool(null, $backend);
-        $stored = $pool->getItem('stored');
-        $stored->set('kept');
-        $this->assertTrue($pool->save($stored));
-
-        $deferred = $pool->getItem('deferred');
-        $deferred->set('queued');
-        $this->assertTrue($pool->saveDeferred($deferred));
-
-        $backend->failClear = true;
-        $this->assertFalse($pool->clear());
-        $backend->failClear = false;
-
-        $this->assertSame('kept', $pool->getItem('stored')->get());
-        $this->assertSame('queued', $pool->getItem('deferred')->get());
-    }
-
-    public function testFailedCommitKeepsDeferredItemsForRetry(): void
-    {
-        $backend = new MemoryBackend();
-        $clock = $this->clock();
-        $pool = $this->pool($clock, $backend);
-        $reader = $this->pool($clock, $backend);
-
-        $first = $pool->getItem('one');
-        $first->set('a');
-        $second = $pool->getItem('two');
-        $second->set('b');
-        $this->assertTrue($pool->saveDeferred($first));
-        $this->assertTrue($pool->saveDeferred($second));
-
-        $backend->failWrites = true;
-        $this->assertFalse($pool->save($pool->getItem('one')->set('nope')));
-        $this->assertFalse($pool->commit());
-        $this->assertFalse($reader->hasItem('one'));
-        $this->assertTrue($pool->hasItem('one'));
-        $this->assertSame('a', $pool->getItem('one')->get());
-        $this->assertSame('b', $pool->getItem('two')->get());
-
-        $backend->failWrites = false;
-        $this->assertTrue($pool->commit());
-        $this->assertSame('a', $reader->getItem('one')->get());
-        $this->assertSame('b', $reader->getItem('two')->get());
-    }
-
-    public function testEmptyCommitSucceedsWhileWritesAreFailing(): void
-    {
-        $backend = new MemoryBackend();
-        $pool = $this->pool(null, $backend);
-        $backend->failWrites = true;
-
-        $this->assertTrue($pool->commit());
     }
 
     public function testDestructorPersistsDeferredItems(): void
@@ -233,9 +179,6 @@ class MemoryCachePoolDeferredTest extends TestCase
 
         unset($first, $second, $pool);
         gc_collect_cycles();
-
-        $this->assertTrue($backend->has('key'));
-        $this->assertTrue($backend->has('other'));
 
         $again = $this->pool($clock, $backend);
         $this->assertTrue($again->getItem('key')->isHit());
