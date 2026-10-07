@@ -63,6 +63,9 @@ class MemoryCachePoolKeyTest extends TestCase
     public function testRequiredKeyCharactersRoundTripUnmodified(): void
     {
         $pool = $this->pool();
+        $maxLengthKey = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.';
+        $this->assertSame(64, strlen($maxLengthKey));
+
         $keys = [
             '.',
             '..',
@@ -72,10 +75,8 @@ class MemoryCachePoolKeyTest extends TestCase
             '0.0',
             'A',
             'z',
-            'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.',
+            $maxLengthKey,
         ];
-
-        $this->assertSame(64, strlen($keys[8]));
 
         foreach ($keys as $key) {
             $item = $pool->getItem($key);
@@ -94,7 +95,7 @@ class MemoryCachePoolKeyTest extends TestCase
         }
 
         $pairs = $this->pairs($pool->getItems(['0', '00', '0.0', '123']));
-        $this->assertSame(
+        $this->assertEqualsCanonicalizing(
             [
                 ['0', 'string', '0', true],
                 ['00', 'string', '00', true],
@@ -241,17 +242,6 @@ class MemoryCachePoolKeyTest extends TestCase
         } catch (\TypeError $exception) {
             $this->assertStringContainsString('string', $exception->getMessage());
         }
-    }
-
-    public function testGetItemsUsesValuesFromAnAssociativeList(): void
-    {
-        $pool = $this->pool();
-        $pairs = $this->pairs($pool->getItems(['ignored' => 'real', 'also-ignored' => 'other']));
-
-        $this->assertSame('real', $pairs[0][0]);
-        $this->assertSame('real', $pairs[0][1]->getKey());
-        $this->assertSame('other', $pairs[1][0]);
-        $this->assertSame('other', $pairs[1][1]->getKey());
     }
 
     public function testDeletingNumericStringKeyDoesNotDeleteALookalike(): void

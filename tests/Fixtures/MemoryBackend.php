@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace Psr\Cache\Tests\Fixtures;
 
 /**
- * In-memory storage shared by one or more pools. Deferred queues stay on the pool.
+ * Storage for the reference implementation in tests/Fixtures.
+ *
+ * This is test support, not part of the package under test. Deferred queues
+ * stay on the pool rather than this shared backend.
  */
 final class MemoryBackend
 {

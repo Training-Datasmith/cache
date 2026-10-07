@@ -46,11 +46,24 @@ class CacheItemPoolInterfaceTest extends TestCase
             [['keys', 'array', true, []]],
             'iterable'
         );
-        $this->assertDocContains(
+        $this->assertDocTag(
             CacheItemPoolInterface::class,
             'getItems',
+            'return',
             'iterable<string, CacheItemInterface>'
         );
+    }
+
+    public function testKeyMethodsDocumentInvalidArgumentException(): void
+    {
+        foreach (['getItem', 'getItems', 'hasItem', 'deleteItem', 'deleteItems'] as $method) {
+            $this->assertDocTag(
+                CacheItemPoolInterface::class,
+                $method,
+                'throws',
+                'InvalidArgumentException'
+            );
+        }
     }
 
     public function testHasItemSignature(): void

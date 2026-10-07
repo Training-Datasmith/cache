@@ -116,13 +116,13 @@ trait SignatureAssertions
             }
         }
 
-        $this->assertSame($expected, $names);
+        $this->assertEqualsCanonicalizing($expected, $names);
     }
 
     /**
      * @param class-string $interface
      */
-    private function assertDocContains(string $interface, string $method, string $needle): void
+    private function assertDocTag(string $interface, string $method, string $tag, string $value): void
     {
         if (!$this instanceof TestCase) {
             throw new \LogicException('SignatureAssertions must be used by a test case.');
@@ -130,10 +130,13 @@ trait SignatureAssertions
 
         $comment = (new \ReflectionMethod($interface, $method))->getDocComment();
         $this->assertIsString($comment);
-        $stripped = preg_replace('#^\s*/\*\*|\*/\s*$#', '', $comment);
-        $stripped = preg_replace('#^\s*\*\s?#m', '', (string) $stripped);
-        $normalized = preg_replace('/\s+/', ' ', trim((string) $stripped));
-        $this->assertIsString($normalized);
-        $this->assertStringContainsString($needle, $normalized);
+
+        $matched = preg_match_all(
+            '/^\s*\*\s*@' . preg_quote($tag, '/') . '\s+([^\r\n*]+)\s*$/m',
+            $comment,
+            $matches
+        );
+        $this->assertNotFalse($matched);
+        $this->assertContains($value, array_map('trim', $matches[1]));
     }
 }

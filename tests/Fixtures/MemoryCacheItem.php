@@ -7,7 +7,9 @@ namespace Psr\Cache\Tests\Fixtures;
 use Psr\Cache\CacheItemInterface;
 
 /**
- * Cache item issued by MemoryCachePool. The hit flag records the lookup, not set().
+ * Cache item for the reference implementation in tests/Fixtures.
+ *
+ * This is test support, not part of the package under test.
  */
 final class MemoryCacheItem implements CacheItemInterface
 {
@@ -25,9 +27,6 @@ final class MemoryCacheItem implements CacheItemInterface
 
     /** @var mixed */
     private $value;
-
-    /** @var bool */
-    private $valueWasSet = false;
 
     /** @var \DateTimeImmutable|null */
     private $expiration;
@@ -58,7 +57,7 @@ final class MemoryCacheItem implements CacheItemInterface
 
     public function get(): mixed
     {
-        if (!$this->hit && !$this->valueWasSet) {
+        if (!$this->hit) {
             return null;
         }
 
@@ -73,7 +72,6 @@ final class MemoryCacheItem implements CacheItemInterface
     public function set(mixed $value): static
     {
         $this->value = $value;
-        $this->valueWasSet = true;
 
         return $this;
     }

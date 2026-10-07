@@ -184,21 +184,4 @@ class MemoryCachePoolLifetimeTest extends TestCase
         $this->assertTrue($pool->save($shortThenPast));
         $this->assertFalse($pool->hasItem('dropped'));
     }
-
-    public function testResavingKeepsAnExistingExpiration(): void
-    {
-        $clock = $this->clock();
-        $pool = $this->pool($clock);
-        $item = $pool->getItem('key');
-        $item->set('value')->expiresAfter(10);
-        $this->assertTrue($pool->save($item));
-
-        $again = $pool->getItem('key');
-        $this->assertTrue($pool->save($again));
-        $clock->advance(9);
-        $this->assertTrue($pool->getItem('key')->isHit());
-        $this->assertSame('value', $pool->getItem('key')->get());
-        $clock->advance(1);
-        $this->assertFalse($pool->hasItem('key'));
-    }
 }

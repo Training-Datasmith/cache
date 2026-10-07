@@ -192,7 +192,7 @@ final class MemoryCachePool implements CacheItemPoolInterface
             $key,
             $this->clock,
             true,
-            $record['value'],
+            $this->isolateValue($record['value']),
             $record['expiration']
         );
     }

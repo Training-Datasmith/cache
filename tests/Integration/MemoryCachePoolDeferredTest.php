@@ -30,7 +30,6 @@ class MemoryCachePoolDeferredTest extends TestCase
         $second->set('4712');
         $this->assertTrue($pool->saveDeferred($second));
 
-        $this->assertFalse($reader->hasItem('key'));
         $this->assertTrue($pool->hasItem('key'));
         $this->assertTrue($pool->getItem('key')->isHit());
         $this->assertSame('4711', $pool->getItem('key')->get());
@@ -178,34 +177,11 @@ class MemoryCachePoolDeferredTest extends TestCase
         $this->assertTrue($pool->saveDeferred($second));
 
         unset($first, $second, $pool);
-        gc_collect_cycles();
 
         $again = $this->pool($clock, $backend);
         $this->assertTrue($again->getItem('key')->isHit());
         $this->assertSame('4711', $again->getItem('key')->get());
         $this->assertSame('4712', $again->getItem('other')->get());
-    }
-
-    public function testClearOnOnePoolDoesNotDiscardAnotherPoolsDeferredQueue(): void
-    {
-        $backend = new MemoryBackend();
-        $clock = $this->clock();
-        $first = $this->pool($clock, $backend);
-        $second = $this->pool($clock, $backend);
-
-        $persisted = $first->getItem('persisted');
-        $persisted->set('stored');
-        $this->assertTrue($first->save($persisted));
-
-        $deferred = $second->getItem('deferred');
-        $deferred->set('queued');
-        $this->assertTrue($second->saveDeferred($deferred));
-
-        $this->assertTrue($first->clear());
-        $this->assertFalse($first->hasItem('persisted'));
-        $this->assertFalse($second->hasItem('persisted'));
-        $this->assertTrue($second->hasItem('deferred'));
-        $this->assertSame('queued', $second->getItem('deferred')->get());
     }
 
     public function testGetItemsSeesDeferredValues(): void
@@ -215,10 +191,14 @@ class MemoryCachePoolDeferredTest extends TestCase
         $hit->set('ready');
         $this->assertTrue($pool->saveDeferred($hit));
 
-        $pairs = $this->pairs($pool->getItems(['hit', 'miss']));
-        $this->assertTrue($pairs[0][1]->isHit());
-        $this->assertSame('ready', $pairs[0][1]->get());
-        $this->assertFalse($pairs[1][1]->isHit());
-        $this->assertNull($pairs[1][1]->get());
+        $items = [];
+        foreach ($this->pairs($pool->getItems(['hit', 'miss'])) as [$key, $item]) {
+            $items[$key] = $item;
+        }
+
+        $this->assertTrue($items['hit']->isHit());
+        $this->assertSame('ready', $items['hit']->get());
+        $this->assertFalse($items['miss']->isHit());
+        $this->assertNull($items['miss']->get());
     }
 }

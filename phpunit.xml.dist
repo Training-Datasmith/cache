@@ -11,8 +11,11 @@
     failOnRisky="true"
     failOnWarning="true">
     <testsuites>
-        <testsuite name="psr-cache">
-            <directory>tests</directory>
+        <testsuite name="package-contract">
+            <directory>tests/Contract</directory>
+        </testsuite>
+        <testsuite name="reference-implementation">
+            <directory>tests/Integration</directory>
         </testsuite>
     </testsuites>
     <php>
