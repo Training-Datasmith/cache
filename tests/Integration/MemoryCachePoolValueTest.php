@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Psr\Cache\Tests\Integration;
 
 use PHPUnit\Framework\TestCase;
-use Psr\Cache\CacheItemInterface;
 use Psr\Cache\Tests\Fixtures\SampleValue;
 
 /**
