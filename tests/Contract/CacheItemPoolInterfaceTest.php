@@ -52,6 +52,12 @@ class CacheItemPoolInterfaceTest extends TestCase
             'return',
             'iterable<string, CacheItemInterface>'
         );
+        $this->assertDocTag(
+            CacheItemPoolInterface::class,
+            'getItems',
+            'param',
+            'string[] $keys'
+        );
     }
 
     public function testKeyMethodsDocumentInvalidArgumentException(): void
@@ -98,6 +104,12 @@ class CacheItemPoolInterfaceTest extends TestCase
             'deleteItems',
             [['keys', 'array']],
             'bool'
+        );
+        $this->assertDocTag(
+            CacheItemPoolInterface::class,
+            'deleteItems',
+            'param',
+            'string[] $keys'
         );
     }
 

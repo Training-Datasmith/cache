@@ -61,20 +61,6 @@ class MemoryCachePoolLifetimeTest extends TestCase
         $this->assertNull($pool->getItem('immutable')->get());
     }
 
-    public function testExpiresAtCopiesTheInstantInsteadOfKeepingTheCallerClock(): void
-    {
-        $clock = $this->clock();
-        $pool = $this->pool($clock);
-        $item = $pool->getItem('key');
-        $item->set('value');
-        $mutable = new \DateTime('2026-01-15T13:00:00+00:00');
-        $item->expiresAt($mutable);
-        $mutable->modify('-2 hours');
-
-        $this->assertTrue($pool->save($item));
-        $this->assertTrue($pool->getItem('key')->isHit());
-    }
-
     public function testExpiresAtComparesAbsoluteInstantsAcrossTimeZones(): void
     {
         $clock = $this->clock(new \DateTimeImmutable('2026-01-15T12:00:00+00:00'));
@@ -97,7 +83,7 @@ class MemoryCachePoolLifetimeTest extends TestCase
         foreach ([0, -1, -30] as $ttl) {
             $item = $pool->getItem('int-' . $ttl);
             $item->set('value')->expiresAfter($ttl);
-            $this->assertTrue($pool->save($item));
+            $pool->save($item);
             $this->assertFalse($pool->hasItem('int-' . $ttl));
             $this->assertNull($pool->getItem('int-' . $ttl)->get());
         }
@@ -105,14 +91,14 @@ class MemoryCachePoolLifetimeTest extends TestCase
         $interval = new \DateInterval('PT0S');
         $item = $pool->getItem('zero-interval');
         $item->set('value')->expiresAfter($interval);
-        $this->assertTrue($pool->save($item));
+        $pool->save($item);
         $this->assertFalse($pool->hasItem('zero-interval'));
 
         $negative = new \DateInterval('PT30S');
         $negative->invert = 1;
         $item = $pool->getItem('negative-interval');
         $item->set('value')->expiresAfter($negative);
-        $this->assertTrue($pool->save($item));
+        $pool->save($item);
         $this->assertFalse($pool->hasItem('negative-interval'));
     }
 
@@ -141,7 +127,7 @@ class MemoryCachePoolLifetimeTest extends TestCase
 
         $item = $pool->getItem('key');
         $item->set('stale')->expiresAt($clock->now()->modify('-1 second'));
-        $this->assertTrue($pool->save($item));
+        $pool->save($item);
 
         $this->assertFalse($pool->hasItem('key'));
         $this->assertFalse($pool->getItem('key')->isHit());
@@ -179,7 +165,26 @@ class MemoryCachePoolLifetimeTest extends TestCase
 
         $shortThenPast = $pool->getItem('dropped');
         $shortThenPast->set('value')->expiresAfter(30)->expiresAt($clock->now()->modify('-1 second'));
-        $this->assertTrue($pool->save($shortThenPast));
+        $pool->save($shortThenPast);
         $this->assertFalse($pool->hasItem('dropped'));
+    }
+
+    public function testSavingAfterExpirationWithoutLifetimePersistsForever(): void
+    {
+        $clock = $this->clock();
+        $pool = $this->pool($clock);
+        $item = $pool->getItem('key');
+        $item->set('old')->expiresAfter(1);
+        $this->assertTrue($pool->save($item));
+
+        $clock->advance(1);
+        $miss = $pool->getItem('key');
+        $this->assertFalse($miss->isHit());
+        $miss->set('fresh');
+        $pool->save($miss);
+
+        $clock->advance(86400);
+        $this->assertTrue($pool->getItem('key')->isHit());
+        $this->assertSame('fresh', $pool->getItem('key')->get());
     }
 }

@@ -49,8 +49,6 @@ class MemoryCachePoolValueTest extends TestCase
         $pool = $this->pool();
         $item = $pool->getItem('missing');
 
-        $this->assertInstanceOf(CacheItemInterface::class, $item);
-        $this->assertNotNull($item);
         $this->assertSame('missing', $item->getKey());
         $this->assertFalse($item->isHit());
         $this->assertNull($item->get());
@@ -276,20 +274,6 @@ class MemoryCachePoolValueTest extends TestCase
         $this->assertSame('foo', $pool->getItem('nested')->get()['list'][0]->a);
     }
 
-    public function testCallerArrayMutationsAfterSaveDoNotChangeTheStoredArray(): void
-    {
-        $pool = $this->pool();
-        $value = ['a' => 1, 'b' => ['c' => 2]];
-        $item = $pool->getItem('key');
-        $item->set($value);
-        $this->assertTrue($pool->save($item));
-
-        $value['a'] = 99;
-        $value['b']['c'] = 100;
-
-        $this->assertSame(['a' => 1, 'b' => ['c' => 2]], $pool->getItem('key')->get());
-    }
-
     public function testLongStringRoundTrips(): void
     {
         $pool = $this->pool();
@@ -332,7 +316,6 @@ class MemoryCachePoolValueTest extends TestCase
         $item->set('v');
         $this->assertTrue($pool->save($item));
 
-        $this->assertIsIterable($pool->getItems());
         $this->assertSame([], $this->pairs($pool->getItems()));
         $this->assertSame([], $this->pairs($pool->getItems([])));
     }

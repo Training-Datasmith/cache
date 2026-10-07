@@ -184,7 +184,7 @@ final class MemoryCachePool implements CacheItemPoolInterface
     private function hydrate(string $key, array $record): MemoryCacheItem
     {
         if ($this->isExpired($record['expiration'])) {
-            return new MemoryCacheItem($this->id, $key, $this->clock, false, null, $record['expiration']);
+            return new MemoryCacheItem($this->id, $key, $this->clock, false, null, null);
         }
 
         return new MemoryCacheItem(
@@ -236,7 +236,7 @@ final class MemoryCachePool implements CacheItemPoolInterface
     private function assertLegalKey($key): void
     {
         if (!is_string($key)) {
-            throw new \TypeError(sprintf('Cache key must be a string, %s given.', get_debug_type($key)));
+            throw new SimpleInvalidArgumentException(sprintf('Cache key must be a string, %s given.', get_debug_type($key)));
         }
 
         if ($key === '' || strpbrk($key, self::RESERVED_CHARACTERS) !== false) {

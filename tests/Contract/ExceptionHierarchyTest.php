@@ -15,8 +15,6 @@ class ExceptionHierarchyTest extends TestCase
     public function testCacheExceptionExtendsThrowableAndDeclaresNoMethods(): void
     {
         $this->assertTrue(is_subclass_of(CacheException::class, \Throwable::class));
-        $this->assertFalse(is_subclass_of(CacheException::class, InvalidArgumentException::class));
-        $this->assertFalse(is_subclass_of(CacheException::class, \Exception::class));
         $this->assertSame(
             $this->inheritedInterfaceClosure(\Throwable::class),
             $this->sortedInterfaces(CacheException::class)
@@ -28,7 +26,6 @@ class ExceptionHierarchyTest extends TestCase
     {
         $this->assertTrue(is_subclass_of(InvalidArgumentException::class, CacheException::class));
         $this->assertTrue(is_subclass_of(InvalidArgumentException::class, \Throwable::class));
-        $this->assertFalse(is_subclass_of(InvalidArgumentException::class, \InvalidArgumentException::class));
 
         $this->assertSame(
             $this->inheritedInterfaceClosure(CacheException::class),

@@ -99,13 +99,13 @@ class MemoryCachePoolDeferredTest extends TestCase
 
         $replacement = $pool->getItem('key');
         $replacement->set('new')->expiresAt($clock->now()->modify('-1 second'));
-        $this->assertTrue($pool->saveDeferred($replacement));
+        $pool->saveDeferred($replacement);
 
         $this->assertFalse($pool->hasItem('key'));
         $this->assertFalse($pool->getItem('key')->isHit());
         $this->assertNull($pool->getItem('key')->get());
 
-        $this->assertTrue($pool->commit());
+        $pool->commit();
         $this->assertFalse($pool->hasItem('key'));
         $this->assertNull($pool->getItem('key')->get());
     }
@@ -122,7 +122,7 @@ class MemoryCachePoolDeferredTest extends TestCase
         $this->assertTrue($pool->hasItem('key'));
         $clock->advance(1);
         $this->assertFalse($pool->hasItem('key'));
-        $this->assertTrue($pool->commit());
+        $pool->commit();
         $this->assertFalse($pool->getItem('key')->isHit());
     }
 

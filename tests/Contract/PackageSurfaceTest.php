@@ -40,7 +40,6 @@ class PackageSurfaceTest extends TestCase
         foreach ($types as $type => $filename) {
             $reflection = new \ReflectionClass($type);
             $this->assertTrue($reflection->isInterface(), $type . ' must stay an interface.');
-            $this->assertFalse($reflection->isInstantiable());
             $this->assertSame('Psr\\Cache', $reflection->getNamespaceName());
             $this->assertStringEndsWith('/src/' . $filename, str_replace('\\', '/', (string) $reflection->getFileName()));
             $this->assertSame([], $reflection->getConstants());

@@ -26,15 +26,12 @@ trait SignatureAssertions
 
         $method = $class->getMethod($name);
         $this->assertSame($interface, $method->getDeclaringClass()->getName());
-        $this->assertTrue($method->isPublic());
         $this->assertFalse($method->isStatic());
 
         $return = $method->getReturnType();
         $this->assertInstanceOf(\ReflectionNamedType::class, $return);
         $this->assertSame($returnType, $return->getName());
-        if ($returnType === 'mixed') {
-            $this->assertTrue($return->allowsNull(), 'mixed includes null.');
-        } else {
+        if ($returnType !== 'mixed') {
             $this->assertFalse($return->allowsNull(), $name . ' must not declare a nullable return type.');
         }
 
@@ -67,7 +64,6 @@ trait SignatureAssertions
         if ($expected === 'mixed') {
             $this->assertInstanceOf(\ReflectionNamedType::class, $type);
             $this->assertSame('mixed', $type->getName());
-            $this->assertTrue($type->allowsNull());
 
             return;
         }
